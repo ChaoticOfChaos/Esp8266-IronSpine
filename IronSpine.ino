@@ -102,7 +102,7 @@ void handleSettings() {
   String htmlConfig = "<html><head><title>Esp8266 | Settings</title>";
   htmlConfig += "<style>html{background-color:black;color:purple;}.link{color:red;}</style></head>";
   htmlConfig += "<body><h1>Esp8266 : Settings</h1>";
-  htmlConfig += "<h4>Páginas:</h4>";
+  htmlConfig += "<h4>Pages:</h4>";
   htmlConfig += "<a href='/' class='link'>Root</a><br>";
   htmlConfig += "<a href='/invade' class='link'>SSID Invade</a><br>";
   htmlConfig += "<a href='/scanner' class='link'>AP Scanner</a><br>";
