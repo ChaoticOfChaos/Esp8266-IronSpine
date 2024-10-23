@@ -4,7 +4,7 @@
 
 // Credenciais do AP
 const char* ap_ssid = "ESP8266";
-const char* ap_password = "HashTech";
+const char* ap_password = "1234567890";
 
 // Cria o servido HTTP
 ESP8266WebServer server(80);
