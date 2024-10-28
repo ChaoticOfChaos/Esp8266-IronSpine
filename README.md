@@ -23,6 +23,7 @@ A Simple Firmware to ESP8266
 - AP Connection (Connect Esp8266 to Selected AP)
 - AP Scanner (Scan and Show Close APs, Clicking on AP Start a Deauth Attack)
 - ARP List (Show IPv4 and Mac From Connected Devices by ARP)
+- Capture (Capture Packages In WiFi Like a MITM[Man in The Midle] and Show Content in Serial Monitor)
 
 # PT-BR
 Some characters do not have the correct accent due to a compilation error, which causes some characters that have an accent to be displayed incorrectly.<br>
