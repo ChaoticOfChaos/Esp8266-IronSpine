@@ -30,22 +30,26 @@ void setupAP() {
   server.on("/scanner", handleWifiScanner);
   server.on("/deauth", handleAttackDeauth);
   server.on("/arp", handleARP);
+  server.on("/cap", capture);
   server.begin();
 
 
   Serial.println("HTTP Server Started...");
 }
 
+// Root Page Confis
 void handleRoot() {
-  String htmlRoot = "<html><head><title>Esp8266 | Root</title><style>html {background-color: black;color: purple;display: flex;}a {color: red;}</style></head><body><h1>Esp8266 : Settings</h1><h2>Pages : </h2><a href='/connect'>AP Connection</a><br><a href='/scanner'>AP Scanner</a><br><a href='/arp'>ARP Scanner</a><br></body></html>";
+  String htmlRoot = "<html><head><title>Esp8266 | Root</title><style>html {background-color: black;color: purple;display: flex;}a {color: red;}</style></head><body><h1>Esp8266 : Settings</h1><h2>Pages : </h2><a href='/connect'>AP Connection</a><br><a href='/scanner'>AP Scanner</a><br><a href='/arp'>ARP Scanner</a><br><a href='/cap'>Capture</a></body></html>";
   server.send(200, "text/html", htmlRoot);
 }
 
+// Connection Page Conf
 void handleWifiConnect() {
-  String htmlConnection = "<html><head><title>Esp8266 | AP Connect</title><style>html {background-color: black;color: purple;}input {background-color: black;color: purple;}</style></head><body><h1>AP Connection Config</h1><form action='/submit' method='POST'>SSID : <input type='text' name='ssid'><br>Pass : <input type='text' name='password'><br><input type='submit' value='Connect'></form></body></html>";
+  String htmlConnection = "<html><head><title>Esp8266 | AP Connect</title><style>html {background-color: black;color: purple;}input {background-color: black;color: purple;}</style></head><body><h1>AP Connection Config</h1><form action='/submit' method='POST'>SSID : <input type='text' name='ssid'><br>Pass : <input type='password' name='password'><br><input type='submit' value='Connect'></form></body></html>";
   server.send(200, "text/html", htmlConnection);
 }
 
+// Page that recive the AP login credentials
 void handleSubmit() {
   ssid = server.arg("ssid");
   password = server.arg("password");
@@ -78,6 +82,7 @@ void connectToWiFi() {
   }
 }
 
+// Start/Restart HTTP server
 void startWebServer() {
   server.on("/", []() {
     server.send(200, "text/html", "<h1>Connected to AP!</h1>");
@@ -86,6 +91,7 @@ void startWebServer() {
   Serial.println("HTTP Server Started!");
 }
 
+// Wifi Scanner Handle
 void handleWifiScanner() {
   int numNetworks = WiFi.scanNetworks();
   String htmlScan = "<html><head><title>Esp8266 | AP Scan</title><style>html {background-color: black;color: purple;}a {color: red;}</style></head><body><h1>Close APs</h1><ul>";
@@ -99,6 +105,7 @@ void handleWifiScanner() {
   server.send(200, "text/html", htmlScan);
 }
 
+// ARP Page Conf
 void handleARP() {
   String htmlArp = "<html><head><title>Esp8266 | ARP</title><style>html {background-color: black;color: purple;}</style></head><body>";
   htmlArp += "<h1>Connected Devices : </h1><table border='1'><tr><th>IPv4</th><th>MAC Address</th></tr>";
@@ -125,6 +132,7 @@ void handleARP() {
   server.send(200, "text/html", htmlArp);
 }
 
+// Deauth function1
 void deauthAttack(uint8_t *targetMac) {
   for (int i = 0; i < 100; i++) {
     sendDeauthFrame(targetMac);
@@ -132,6 +140,7 @@ void deauthAttack(uint8_t *targetMac) {
   }
 }
 
+// Deauth function2
 void sendDeauthFrame(uint8_t *targetMac) {
   uint8_t deauthPacket[] = {
     0xC0, 0x00, 0x3A, 0x01,
@@ -144,7 +153,7 @@ void sendDeauthFrame(uint8_t *targetMac) {
   wifi_send_pkt_freedom(deauthPacket, sizeof(deauthPacket), 0);
 }
 
-// Start Deauth Attack
+// Deauth function3
 void handleAttackDeauth() {
   if (server.hasArg("ssid") && server.hasArg("channel") && server.hasArg("mac")) {
     targetSSID = server.arg("ssid");
@@ -165,6 +174,7 @@ void handleAttackDeauth() {
   }
 }
 
+// Format MAC
 String formatMacAddress(uint8_t *mac) {
   String macStr = "";
   for (int i = 0; i < 6; i++) {
@@ -177,6 +187,31 @@ String formatMacAddress(uint8_t *mac) {
     }
   }
   return macStr;
+}
+
+// Capture Conf
+void capture() {
+  if (WiFi.status() == WL_CONNECTED) {
+    wifi_promiscuous_enable(1);
+    wifi_set_promiscuous_rx_cb([](uint8_t *buf, uint16_t len) {
+            for (int i = 0; i < len; i++) {
+              Serial.printf("%02X ", buf[i]);
+              if ((i + 1) % 16 == 0) {
+                
+              }
+            }
+            Serial.println("\n");
+            Serial.print("Package Captured - Length : ");
+            Serial.print(len);
+            Serial.println(" bytes");
+            Serial.println("\n");
+        });
+
+    Serial.println("Promiscuous mode Activated. Capturing Packages...");
+    server.send(200, "text/html", "<html><body>Capture Mode Activated!</body></html>");
+  } else {
+    server.send(400, "text/html", "<html><body>Conect a AP before use Capture Function</body></html>");
+  }
 }
 
 
