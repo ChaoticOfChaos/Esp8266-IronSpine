@@ -16,7 +16,7 @@ A Simple Firmware to ESP8266
 
 # How To Use
 1. Open WiFi Connection on Your Phone or Computer
-2. Open Browser and Serch http://192.168.4.1/
+2. Open Browser and Search http://192.168.4.1/
 
 # Functions
 - Root (Functions Home Page)
@@ -24,11 +24,19 @@ A Simple Firmware to ESP8266
 - AP Scanner (Scan and Show Close APs, Clicking on AP Start a Deauth Attack)
 - ARP List (Show IPv4 and Mac From Connected Devices by ARP)
 - Capture (Capture Packages In WiFi Like a MITM[Man in The Midle] and Show Content in Serial Monitor)
+- Ping Scan (Start Ping Scan on a Range[192.168.0.1-192.168.0.254 by Default])
+- IP Interval (Change Ping Scan Range)
 
 # PT-BR
 Some characters do not have the correct accent due to a compilation error, which causes some characters that have an accent to be displayed incorrectly.<br>
 
 Alguns caracteres não tem o acento correto devido erro de compilação, que faz que alguns caracteres que tenha acento serem exibidos de forma incorreta.
+
+# <ESP8266Ping.h>
+This Módule is From @dancol98
+Download at https://github.com/dancol98/ESP8266Ping/
+
+Open Arduino IDE > Sketch > Include Library > Include .ZIP Library > Select ZIP From Library
 
 # Optional Things
 - Battery Module
