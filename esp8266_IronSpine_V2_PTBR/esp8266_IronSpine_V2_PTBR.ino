@@ -1,6 +1,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <lwip/etharp.h>
+#include <ESP8266Ping.h>
 
 // Credenciais do AP
 const char* ap_ssid = "ESP8266";
@@ -18,6 +19,12 @@ uint8_t targetMac[6];
 String ssid;
 String password;
 
+// Configurações do PingScan
+IPAddress startIP(192, 168, 0, 1);
+IPAddress endIP(192, 168, 0, 254);
+
+String scanResult;
+
 // Configurações do AP
 void setupAP() {
   Serial.println("Iniciando AP...");
@@ -31,6 +38,9 @@ void setupAP() {
   server.on("/deauth", handleAttackDeauth);
   server.on("/arp", handleARP);
   server.on("/cap", capture);
+  server.on("/pingscan", handlePingScan);
+  server.on("/pingscan-interval", handleSetInterval);
+  server.on("/pingscan-submit-interval", handleSubmitInterval);
   server.begin();
 
 
@@ -39,7 +49,7 @@ void setupAP() {
 
 // Configurações da Pagina Inicial
 void handleRoot() {
-  String htmlRoot = "<html><head><title>Esp8266 | Root</title><style>html {background-color: black;color: purple;display: flex;}a {color: red;}</style></head><body><h1>Esp8266 : Configuracoes</h1><h2>Paginas : </h2><a href='/connect'>Conexao WiFi</a><br><a href='/scanner'>Scaner WiFi</a><br><a href='/arp'>Scaner ARP</a><br><a href='/cap'>Capture</a></body></html>";
+  String htmlRoot = "<html><head><title>Esp8266 | Root</title><style>html {background-color: black;color: purple;display: flex;}a {color: red;}</style></head><body><h1>Esp8266 : Configuracoes</h1><h2>Paginas : </h2><a href='/connect'>Conexao WiFi</a><br><a href='/scanner'>Scaner WiFi</a><br><a href='/arp'>Scaner ARP</a><br><a href='/cap'>Capture</a><br><a href='/pingscan'>Ping Scan</a><br><a href='/pingscan-interval'>Definir Intervalo</a></body></html>";
   server.send(200, "text/html", htmlRoot);
 }
 
@@ -75,6 +85,9 @@ void connectToWiFi() {
 
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\nConectado ao WiFi");
+    Serial.println("IP : ");
+    Serial.print(WiFi.localIP());
+    Serial.println();
     startWebServer();
   } else {
     Serial.println("Falha ao Tentar se Conectar ao WiFi");
@@ -201,10 +214,6 @@ void capture() {
               }
             }
             Serial.println("\n");
-            Serial.print("Pacote Capturado - Tamanho: ");
-            Serial.print(len);
-            Serial.println(" bytes");
-            Serial.println("\n");
         });
 
     Serial.println("Modo promíscuo ativado. Capturando Pacotes...");
@@ -212,6 +221,53 @@ void capture() {
   } else {
     server.send(400, "text/html", "<html><body>Conecte-se a um WiFi antes de ativar o modo de captura</body></html>");
   }
+}
+
+void handleSetInterval() {
+  String htmlSetInterval = "<!DOCTYPE html><html><head><style>html{background-color:black;color:purple;}a{color:red}</style><title>Esp826 | Ping Scan Interval</title></head><body>";
+  htmlSetInterval += "<h1>Definir Intervalo de IP</h1>";
+  htmlSetInterval += "<form action=\"/pingscan-submit-interval\" method=\"POST\">";
+  htmlSetInterval += "IP Inicial : <input type=\"Text\" name=\"startIP\" value=\"" + startIP.toString() + "\"><br>";
+  htmlSetInterval += "IP Final : <input type=\"text\" name=\"endIP\" value=\"" + endIP.toString() + "\"><br>";
+  htmlSetInterval += "<input type=\"submit\" value=\"Salvar\">";
+  htmlSetInterval += "</form>";
+  htmlSetInterval += "<p><a href=\"/\">Voltar</a></p>";
+  htmlSetInterval += "</body></html>";
+
+  server.send(200, "text/html", htmlSetInterval);
+}
+
+void handleSubmitInterval() {
+  if (server.hasArg("startIP") && server.hasArg("endIP")) {
+    String startIPStr = server.arg("startIP");
+    String endIPStr = server.arg("endIP");
+
+    if (startIP.fromString(startIPStr) && endIP.fromString(endIPStr)) {
+      server.send(200, "text/html", "<h1>Intervalo Atualizado</h1><p><a href=\"/\">Voltar</a></p>");
+      return;
+    }
+  }
+  server.send(400, "text/html", "<h1>Erro ao atualizar o intervalo!</h1><p>Certifique-se de que os IPs estão no formato correto.</p><p><a href=\"/\">Voltar</a></p>");
+}
+
+void handlePingScan() {
+  scanResult = "<head><title>Esp8266 | Ping Result</title><style>html{background-color:black;color:purple;}a{color:red;}</style></head><h2>Resultados do Ping Scan:</h2><ul>";
+  for (uint8_t i = startIP[3]; i <= endIP[3]; i++) {
+    IPAddress targetIP = startIP;
+    targetIP[3] = i;
+
+    if (Ping.ping(targetIP, 1)) {
+      scanResult += "<li>Dispositivo em : " + targetIP.toString() + "</li>";
+      Serial.println("Dispositivo Encontrado : " + targetIP.toString());
+    } else {
+      // Monstra os dispositivos sem Pong
+      // Descomente se quiser
+      // scanResult += "<li>Sem Resposta : " + targetIP.toString() + "</li>";
+    }
+    delay(100);
+  }
+  scanResult += "</ul>";
+  server.send(200, "text/html", scanResult);
 }
 
 void setup() {
