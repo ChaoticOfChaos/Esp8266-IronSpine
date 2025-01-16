@@ -32,8 +32,7 @@ void setupAP() {
 
   // HTTP Server Routes
   server.on("/", handleRoot);
-  server.on("/connect", handleWifiConnect);
-  server.on("/submit", HTTP_POST, handleSubmit);
+  server.on("/wifi", handleWifiConnectScan);
   server.on("/scanner", handleWifiScanner);
   server.on("/deauth", handleAttackDeauth);
   server.on("/arp", handleARP);
@@ -41,6 +40,8 @@ void setupAP() {
   server.on("/pingscan", handlePingScan);
   server.on("/pingscan-interval", handleSetInterval);
   server.on("/pingscan-submit-interval", handleSubmitInterval);
+  server.on("/select-wifi", handleWifiScanSelect);
+  server.on("/connect", handleWifiConnect);
   server.begin();
 
 
@@ -49,49 +50,60 @@ void setupAP() {
 
 // Root Page Confis
 void handleRoot() {
-  String htmlRoot = "<html><head><title>Esp8266 | Root</title><style>html {background-color: black;color: purple;display: flex;}a {color: red;}</style></head><body><h1>Esp8266 : Settings</h1><h2>Pages : </h2><a href='/connect'>AP Connection</a><br><a href='/scanner'>AP Scanner</a><br><a href='/arp'>ARP Scanner</a><br><a href='/cap'>Capture</a><br><a href='/pingscan'>Ping Scan</a><br><a href='pingscan-interval'>IP Interval</a></body></html>";
+  String htmlRoot = "<html><head><title>ESP8266 | Root</title><style>html {background-color: black;color: purple;display: flex;}a {color: red;}</style></head><body><h1>Esp8266 : Settings</h1><h2>Pages : </h2><a href='/wifi'>AP Connection</a><br><a href='/scanner'>AP Scanner</a><br><a href='/arp'>ARP Scanner</a><br><a href='/cap'>Capture</a><br><a href='/pingscan'>Ping Scan</a><br><a href='pingscan-interval'>IP Interval</a></body></html>";
   server.send(200, "text/html", htmlRoot);
 }
 
-// Connection Page Conf
-void handleWifiConnect() {
-  String htmlConnection = "<html><head><title>Esp8266 | AP Connect</title><style>html {background-color: black;color: purple;}input {background-color: black;color: purple;}</style></head><body><h1>AP Connection Config</h1><form action='/submit' method='POST'>SSID : <input type='text' name='ssid'><br>Pass : <input type='password' name='password'><br><input type='submit' value='Connect'></form></body></html>";
-  server.send(200, "text/html", htmlConnection);
+
+// Handle da pagina de conexão wifi
+void handleWifiConnectScan() {
+  String page = "<html><head><title>ESP8266 | WiFi</title><style>html{background-color: black; color: purple;}a{color:red}</style></head><body><h1>Close APs:</h1><ul>";
+    int numNetworks = WiFi.scanNetworks();
+    for (int i = 0; i < numNetworks; i++) {
+      page += "<li><a href='/select-wifi?ssid=" + WiFi.SSID(i) + "'>" + WiFi.SSID(i) + "</a></li>";
+
+    }
+    page += "</ul></body></html>";
+    server.send(200, "text/html", page);
 }
 
-// Page that recive the AP login credentials
-void handleSubmit() {
-  ssid = server.arg("ssid");
-  password = server.arg("password");
-
-  String message = "Trying to Connect SSID : " + ssid;
-  server.send(200, "text/html", message);
-
-  delay(1000);
-  WiFi.softAPdisconnect(true);
-  connectToWiFi();
-}
-
-// Connect Esp8266 to AP
-void connectToWiFi() {
-  WiFi.begin(ssid.c_str(), password.c_str());
-
-  int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-    delay(500);
-    Serial.print(".");
-    attempts++;
+void handleWifiScanSelect() {
+  if (server.hasArg("ssid")) {
+    ssid = server.arg("ssid");
+    String page = "<html><head><title>ESP8266 | WiFi Pass</title><style>html{background-color: black; color: purple;}a{color:red}</style></head><body><h1>Connect to " + ssid + "</h1>";
+    page += "<form action='/connect' method='POST'>";
+    page += "Pass: <input type='password' name='password'><br>";
+    page += "<input type='submit' value='Connect'></form></body></html>";
+    server.send(200, "text/html", page);
   }
+}
 
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\nConnected to AP");
-    Serial.println("IP : ");
-    Serial.print(WiFi.localIP());
-    Serial.println();
-    startWebServer();
-  } else {
-    Serial.println("Fail to Connect a AP");
-    setupAP();
+void handleWifiConnect() {
+  if (server.hasArg("password")) {
+    password = server.arg("password");
+    WiFi.softAPdisconnect(true);
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid.c_str(), password.c_str());
+
+    int attempts = 0;
+
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+      delay(500);
+      Serial.print(".");
+      attempts++;
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.println("Connected");
+      Serial.print("IP : ");
+      Serial.println(WiFi.localIP());
+      startWebServer();
+    } else {
+      Serial.println("Fail on Connection");
+      setupAP();
+    }
+
+    server.send(200, "text/html", "<html><body><h1>Connecting...</h1></body></html>");
   }
 }
 
